@@ -32,47 +32,33 @@ class DHC_OCR:
         fig = plt.figure(figsize=figsize)
         plt.imshow(img, cmap="gray")
         plt.show()
-    
-    def prediction_img(src):
-    
-        img_read = cv2.imread(src, 0)
 
-        blur = cv2.GaussianBlur(img_read,(5,5),0)
-        ret,img = cv2.threshold(blur,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU) #converts black to white and inverse
+    def prediction(self, img):
+        # load model
+        if self.model is None:
+            loaded_model = tf.keras.models.load_model('nepali_ocr_model.h5')
 
-        # plt.imshow(img)
-        # plt.show()
+        else:
+            loaded_model=self.model
 
-        img = cv2.resize(img, (32, 32))
-        img = cv2.GaussianBlur(img, (3, 3), 0)
-        img = cv2.erode(img, (3, 3), 1)
-        
         img_array = tf.keras.utils.img_to_array(img)
         img_array = tf.expand_dims(img_array, 0) # Create a batch
-
         predictions = model.predict(img_array)
         score = tf.nn.softmax(predictions[0])
 
         class_name = int(class_names[np.argmax(score)])
-        
-        # devanagari_label = labels_csv.loc[class_name, 'Devanagari label']
-        # success = 100 * np.max(score)
-        
-        # Create a figure with two subplots
-        fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+        print(
+            "This image most likely belongs to {} with a {:.2f} percent confidence."
+            .format(labels_csv.loc[class_name, 'Devanagari label'], 100 * np.max(score))
+        )
+        devanagari_label = labels_csv.loc[class_name, 'Devanagari label']
+        success = 100 * np.max(score)
 
-        # Display the first image in the first subplot
-        axs[0].imshow(img_read, cmap='gray')
-        axs[0].set_title('Input Image')
+        # output_txt = "This image most likely belongs to "+devanagari_label + " with a "+ success+ "percent confidence."
 
-        # Display the second image in the second subplot
-        axs[1].imshow(img, cmap='gray')
-        axs[1].set_title('Processed Image')
-
-        # Show the figure
-        # plt.show()
-        
-        return "This image most likely belongs to {} with a {:.2f} percent confidence.".format(labels_csv.loc[class_name, 'Devanagari label'], 100 * np.max(score))
+        return devanagari_label, success
+        # return output_txt
+    
           
     def borders(self, here_img, thresh):
         shape = here_img.shape
@@ -208,31 +194,7 @@ class DHC_OCR:
         self.boxes=boxes
         return rimg, boxes
 
-    def prediction(self, img):
-        # load model
-        if self.model is None:
-            loaded_model = tf.keras.models.load_model('nepali_ocr_model.h5')
-
-        else:
-            loaded_model=self.model
-
-        
-        img_array = tf.keras.utils.img_to_array(img)
-        img_array = tf.expand_dims(img_array, 0) # Create a batch
-
-        predictions = model.predict(img_array)
-        score = tf.nn.softmax(predictions[0])
-
-        class_name = int(class_names[np.argmax(score)])
-        print(
-            "This image most likely belongs to {} with a {:.2f} percent confidence."
-            .format(labels_csv.loc[class_name, 'Devanagari label'], 100 * np.max(score))
-        )
-        devanagari_label = labels_csv.loc[class_name, 'Devanagari label']
-        success = 100 * np.max(score)
-
-        # return devanagari_label, success
-        return devanagari_label
+    
     
     
     def write_character(self, img, pos, txt, fsize=5, fcolor=(0, 100, 100, 0)):
@@ -259,8 +221,9 @@ class DHC_OCR:
             lbl, a = self.prediction(segment)
             self.segment_prediction[self.boxes[i]] = lbl
             
-            pred_lbl+=lbl
-            acc.append(a)
+            if a > 70:         # if accuracy > 70% then only append otherwise not
+                pred_lbl+=lbl
+                acc.append(a)
         return pred_lbl, np.array(acc).mean()
 
     def easy_flow(self, img, view="image"):
@@ -366,27 +329,20 @@ class DHC_OCR:
         
     def main(self, img=None):
         if img is None:
-            print("Image xaina!")
             # go to Camera mode
             self.use_camera(True)
         else:
             try:
-                print('hey')
                 img = cv2.imread(img, 1)
-                print('hey1')
-
                 self.img=img
                 #self.show(img)
                 time1 = time.time()
                 
-                op = self.easy_flow(img)
-                print('hey2')
-
-                print("op", op)
+                self.easy_flow(img)
                 
                 print("In %f" %(time.time()-time1), 'sec')
             except:
-                print("Image not found! Now turning to video mode.\n")
+                print("Image not found now turning to video mode.\n")
                 try:
                     self.camera(True)
                 except:
@@ -394,3 +350,26 @@ class DHC_OCR:
                 #cap.release()
                 cv2.destroyAllWindows()
         
+    
+
+    def predict_image(self, img=None):
+        img = cv2.imread(img, 1)
+        self.img=img
+        #self.show(img)
+        time1 = time.time()
+        
+        op = self.easy_flow(img)
+        
+        print("In %f" %(time.time()-time1), 'sec')
+        return op
+    
+    # def predict_webcam(self):
+    #     try:
+    #         # go to Camera mode
+    #         time1 = time.time()
+    #         op = self.camera(True)
+    #     except:
+    #         op = "Something is wrong, webcam()", 0
+
+    #     print("In %f" %(time.time()-time1), 'sec')
+    #     return op

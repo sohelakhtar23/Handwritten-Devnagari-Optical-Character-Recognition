@@ -44,31 +44,31 @@ def upload_image():
         flash('Image successfully uploaded and displayed below')
         # print("\n\n\n Path: ", os.path.join(app.config['UPLOAD_FOLDER'], filename))
         # image = request.files['file']
-        prediction = DHC_OCR.prediction_img(src=filepath)
+
+        print("xyz file path = ", filepath)
+        docr = DHC_OCR()
+        devanagari_label, success = docr.predict_image(img=filepath)
+        # devanagari_label, success = docr.predict_webcam()
+
+        output_txt = "This image most likely belongs to {} with a {:.2f} percent confidence.".format(devanagari_label, success)
+        print("SOHEL app.py -->  {}".format(output_txt))
+        docr.segment_prediction
+
         # flash(prediction)
-        return render_template('index.html', filename=filename, prediction=prediction)
+        return render_template('index.html', filename=filename, prediction=output_txt)
     
     else:
         flash('Allowed Image types are - png, jpg, jpeg')
         return redirect(request.url)
  
+
+
+
 @app.route('/display/<filename>')
 def display_image(filename):
     #print('display_image filename: ' + filename)
     return redirect(url_for('static', filename='uploads/' + filename), code=301)
 
-# @app.route('/display/<filename>', methods=['POST'])
-# def predict(filename):
-#     if 'file' not in request.files:
-#         flash('No file part')
-#         return redirect(request.url)
-    
-#     image = request.files['image']
-#     ocr_model = DHC_OCR()
-#     prediction = ocr_model.prediction(img=image)
-#     print("pred", prediction)
-#     flash(prediction)
-#     return prediction
 
 if __name__ == '__main__':
     app.run(debug=True)
