@@ -363,13 +363,13 @@ class DHC_OCR:
         print("In %f" %(time.time()-time1), 'sec')
         return op
     
-    # def predict_webcam(self):
-    #     try:
-    #         # go to Camera mode
-    #         time1 = time.time()
-    #         op = self.camera(True)
-    #     except:
-    #         op = "Something is wrong, webcam()", 0
+    def predict_webcam(self):
+        try:
+            # go to Camera mode
+            time1 = time.time()
+            op = self.camera(True)
+        except:
+            op = "Something is wrong, webcam()", 0
 
-    #     print("In %f" %(time.time()-time1), 'sec')
-    #     return op
+        print("In %f" %(time.time()-time1), 'sec')
+        return op
